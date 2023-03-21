@@ -1,0 +1,15 @@
+The original point is (2, 1)
+We want to rotate the point 45 degrees CCW about the origin
+We can do this by multiplying the point by the rotation matrix
+
+The rotation matrix is
+    [cos(45) -sin(45)]
+    [sin(45) cos(45)]
+
+Multiplying (2, 1) by the rotation matrix,
+    [cos(45) -sin(45)] [2] = [cos(45) * 2 - sin(45) * 1] = [1.414 - 0.707] = [0.707]
+    [sin(45) cos(45)] [1]   [sin(45) * 2 + cos(45) * 1]  = [0.707 + 1.414] = [2.121]
+
+Therefore, the point (2, 1) rotated 45 degrees CCW about the origin is (0.707, 2.121).
+
+-Sele Okojie
