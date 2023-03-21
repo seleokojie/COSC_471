@@ -19,8 +19,6 @@ This function takes in the camera eye field of view, the aspect ratio, and the n
 ### ```get_rotation```
 This function takes in an axis and an angle (in degrees) and returns a 4x4 transformation matrix that rotates the model around the given axis by the given angle, going through the origin.
 
-##### Note: All runnable files must be located in the /examples folder
-
 
 ## Example
 
