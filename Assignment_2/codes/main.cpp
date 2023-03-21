@@ -45,11 +45,6 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
     return projection;
 }
 
-/*
-    'get_rotation' takes an axis and an angle in degrees and
-     returns a 4x4 transformation matrix that rotates the model
-     around the given axis by the given angle, going through the origin.
-*/
 Eigen::Matrix4f get_rotation(Vector3f axis, float angle){
     Eigen::Matrix4f rotation = Eigen::Matrix4f::Identity();
 
@@ -81,9 +76,8 @@ int main(int argc, const char** argv){
     if (argc >= 3) {
         command_line = true;
         angle = std::stof(argv[2]); // -r by default
-        if (argc == 4) {
+        if (argc == 4)
             filename = std::string(argv[3]);
-        }
         else
             return 0;
     }
@@ -141,12 +135,10 @@ int main(int argc, const char** argv){
 
         std::cout << "frame count: " << frame_count++ << '\n';
 
-        if (key == 'a') {
+        if (key == 'a')
             angle += 10;
-        }
-        else if (key == 'd') {
+        else if (key == 'd')
             angle -= 10;
-        }
     }
 
     return 0;
