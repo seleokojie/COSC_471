@@ -104,10 +104,10 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         t.setColor(1, col_y[0], col_y[1], col_y[2]);
         t.setColor(2, col_z[0], col_z[1], col_z[2]);
 
-        rasterize_triangle(t);
+        //rasterize_triangle(t);
 
         //Rasterize using the supersampling overloaded function
-        //rasterize_triangle(t, 1);
+        rasterize_triangle(t, 4);
     }
 }
 
@@ -137,61 +137,60 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
 
 }
 
-/*  The following code is for supersampling.
-    It works by sampling the pixel at the center of each subpixel.
-    The color and depth values are averaged over all samples.
+/*  The following code is for stratified supersampling.
+    Note that this code is not optimized for performance.
+    You can modify it to make it faster.
 */
 void rst::rasterizer::rasterize_triangle(const Triangle& t, int sample_rate) {
+    //Convert vertices to homogeneous coordinates
     auto v = t.toVector4();
 
-    int min_x = std::min(std::min(v[0].x(), v[1].x()), v[2].x());
-    int max_x = std::max(std::max(v[0].x(), v[1].x()), v[2].x());
-    int min_y = std::min(std::min(v[0].y(), v[1].y()), v[2].y());
-    int max_y = std::max(std::max(v[0].y(), v[1].y()), v[2].y());
+    //Compute the bounding box of current triangle.
+    int min_x = std::floor(std::min(std::min(v[0].x(), v[1].x()), v[2].x()));
+    int max_x = std::ceil(std::max(std::max(v[0].x(), v[1].x()), v[2].x()));
+    int min_y = std::floor(std::min(std::min(v[0].y(), v[1].y()), v[2].y()));
+    int max_y = std::ceil(std::max(std::max(v[0].y(), v[1].y()), v[2].y()));
 
-    for (int x = min_x; x <= max_x; x++) {
-        for (int y = min_y; y <= max_y; y++) {
-            // Create a sum of the color values and depth values for each sample
-            float color_sum = 0.0f;
-            float depth_sum = 0.0f;
+    int samples_per_pixel = sample_rate * sample_rate;
 
-            // Iterate over each sample
-            for (int i = 0; i < sample_rate; i++) {
-                for (int j = 0; j < sample_rate; j++) {
-                    // Compute the location of the sample within the pixel
-                    float sub_x = (i + 0.5f) / sample_rate;
-                    float sub_y = (j + 0.5f) / sample_rate;
+    //Loop through all pixels in the bounding box
+    for (int x = min_x; x < max_x; x++) {
+        for (int y = min_y; y < max_y; y++) {
+            //Check if the current pixel is inside the triangle
+            if (insideTriangle(x + 0.5, y + 0.5, t.v)) {
+                float z_interpolated = 0.0f; 
+                float w_reciprocal = 0.0f; 
+                Vector3f color_interpolated = Vector3f::Zero();
 
-                    // Compute the pixel location of the sample
-                    float sample_x = x + sub_x;
-                    float sample_y = y + sub_y;
-
-                    // Check if the sample is inside the triangle
-                    if (insideTriangle(sample_x, sample_y, t.v)) {
-                        // Compute the barycentric coordinates of the sample
-                        auto[alpha, beta, gamma] = computeBarycentric2D(sample_x, sample_y, t.v);
-
-                        // Compute the depth value of the sample
-                        float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-
-                        // Compute the color value of the sample
-                        auto color = t.getColor() * alpha + t.getColor() * beta + t.getColor() * gamma;
-
-                        // Add the color and depth values to the sum
-                        color_sum += color[0];
-                        depth_sum += z_interpolated;
+                //Subdivide the pixel into a grid of samples
+                for (int i = 0; i < sample_rate; i++) {
+                    for (int j = 0; j < sample_rate; j++) {
+                        //Compute the barycentric coordinate of the current sub-pixel
+                        float x_sample = x + (i + 0.5) / sample_rate;
+                        float y_sample = y + (j + 0.5) / sample_rate;
+                        auto[alpha, beta, gamma] = computeBarycentric2D(x_sample, y_sample, t.v);
+                        
+                        //Interpolate the attributes of the current sub-pixel
+                        float w_reciprocal_sample = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                        z_interpolated += (alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w()) * w_reciprocal_sample;
+                        w_reciprocal += w_reciprocal_sample;
+                        color_interpolated += w_reciprocal_sample * t.getColor();
                     }
                 }
-            }
-
-            // Compute the final color and depth value for the pixel
-            float color_value = color_sum / (sample_rate * sample_rate);
-            float depth_value = depth_sum / (sample_rate * sample_rate);
-
-            // Check if the depth value is less than the current value in the depth buffer
-            if (depth_value < depth_buf[get_index(x, y)]) {
-                set_pixel(Vector3f(x, y, depth_value), Vector3f(color_value, color_value, color_value));
-                depth_buf[get_index(x, y)] = depth_value;
+                //Average the attributes over all sub-pixels
+                z_interpolated /= (samples_per_pixel);
+                w_reciprocal /= (samples_per_pixel);
+                color_interpolated /= (samples_per_pixel);
+                
+                //Multiply the interpolated attributes by the reciprocal of the interpolated w to get the true interpolated attributes
+                z_interpolated *= w_reciprocal;
+                color_interpolated *= w_reciprocal;
+                
+                //Update the depth buffer and the frame buffer if the current pixel is closer to the camera than the former one
+                if (z_interpolated < depth_buf[get_index(x, y)]) {
+                    set_pixel(Vector3f(x, y, z_interpolated), color_interpolated);
+                    depth_buf[get_index(x, y)] = z_interpolated;
+                }
             }
         }
     }
