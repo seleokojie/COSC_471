@@ -10,26 +10,21 @@
 #include "Triangle.hpp"
 using namespace Eigen;
 
-namespace rst
-{
-    enum class Buffers
-    {
+namespace rst{
+    enum class Buffers{
         Color = 1,
         Depth = 2
     };
 
-    inline Buffers operator|(Buffers a, Buffers b)
-    {
+    inline Buffers operator|(Buffers a, Buffers b){
         return Buffers((int)a | (int)b);
     }
 
-    inline Buffers operator&(Buffers a, Buffers b)
-    {
+    inline Buffers operator&(Buffers a, Buffers b){
         return Buffers((int)a & (int)b);
     }
 
-    enum class Primitive
-    {
+    enum class Primitive{
         Line,
         Triangle
     };
@@ -39,23 +34,19 @@ namespace rst
      * make sure that if you mix up with their orders, the compiler won't compile it.
      * Aka : Type safety
      * */
-    struct pos_buf_id
-    {
+    struct pos_buf_id{
         int pos_id = 0;
     };
 
-    struct ind_buf_id
-    {
+    struct ind_buf_id{
         int ind_id = 0;
     };
 
-    struct col_buf_id
-    {
+    struct col_buf_id{
         int col_id = 0;
     };
 
-    class rasterizer
-    {
+    class rasterizer{
     public:
         rasterizer(int w, int h);
         pos_buf_id load_positions(const std::vector<Eigen::Vector3f>& positions);
