@@ -69,6 +69,7 @@ namespace rst{
         void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
 
         void rasterize_triangle(const Triangle& t);
+        void rasterize_triangle(const Triangle& t, int sample_rate);
 
         // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
 
