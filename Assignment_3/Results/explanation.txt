@@ -1,0 +1,12 @@
+In order to check whether a point was inside the triangle, 
+We checked if it was inside a bounding box of the triangle.
+If it was inside the bounding box, we checked if it was inside the triangle
+using the barycentric coordinates.
+
+In order to rasterize the triangle, we looped through all the pixels in the bounding box.
+For each pixel, we checked if it was inside the triangle using the insideTriangle function.
+If it was inside the triangle, we calculated the z value of the pixel using the barycentric coordinates.
+We then checked if the z value of the pixel was less than the z value of the pixel in the z buffer.
+If it was, we set the color of the pixel to the color of the triangle.
+
+This allowed us to rasterize the triangle and check if it was inside the triangle.
