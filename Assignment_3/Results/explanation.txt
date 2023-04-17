@@ -9,4 +9,9 @@ If it was inside the triangle, we calculated the z value of the pixel using the 
 We then checked if the z value of the pixel was less than the z value of the pixel in the z buffer.
 If it was, we set the color of the pixel to the color of the triangle.
 
+Note the overloaded function of rasterize_triangle.
+This function takes in a triangle and a sample rate. 
+This allows us to perform stratified supersampling on the triangle, where 
+the sample rate is the number of samples per pixel.
+
 This allowed us to rasterize the triangle and check if it was inside the triangle.
