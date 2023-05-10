@@ -186,12 +186,12 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     TBN << t, b, normal;
 
     //Calculate the partial derivatives
-    float dU = kh * kn * (payload.texture->getColor(payload.tex_coords.x() + 1.0f / payload.texture->width, payload.tex_coords.y()).norm() - payload.texture->getColor(payload.tex_coords).norm());
-    float dV = kh * kn * (payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y() + 1.0f / payload.texture->height).norm() - payload.texture->getColor(payload.tex_coords).norm());
+    float dU = kh * kn * (payload.texture->getColor(payload.tex_coords.x() + 1.0f / payload.texture->width, payload.tex_coords.y()).norm() - payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm());
+    float dV = kh * kn * (payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y() + 1.0f / payload.texture->height).norm() - payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm());
     Eigen::Vector3f ln = {-dU, -dV, 1};
     
     //Update the position and normal
-    point = point + kn * normal * payload.texture->getColor(payload.tex_coords).norm();
+    point = point + kn * normal * payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm();
     normal = (TBN * ln).normalized();
 
 
