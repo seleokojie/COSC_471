@@ -82,7 +82,7 @@ struct light{
 Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload){
     Eigen::Vector3f return_color = {0, 0, 0};
     if (payload.texture){
-        // TODO: Get the texture value at the texture coordinates of the current fragment
+        return_color = payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y());
 
     }
     Eigen::Vector3f texture_color;
@@ -226,16 +226,19 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload){
 
     float kh = 0.2, kn = 0.1;
 
-    // TODO: Implement bump mapping here
-    // Let n = normal = (x, y, z)
-    // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
-    // Vector b = n cross product t
-    // Matrix TBN = [t b n]
-    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
-    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
-    // Vector ln = (-dU, -dV, 1)
-    // Normal n = normalize(TBN * ln)
+    //We implement the bump mapping using the normal mapping
+    Eigen::Vector3f t = Eigen::Vector3f(normal.x() * normal.y() / sqrt(normal.x() * normal.x() + normal.z() * normal.z()), sqrt(normal.x() * normal.x() + normal.z() * normal.z()), normal.z() * normal.y() / sqrt(normal.x() * normal.x() + normal.z() * normal.z()));
+    Eigen::Vector3f b = normal.cross(t);
+    Eigen::Matrix3f TBN;
+    TBN << t, b, normal;
 
+    //We calculate the partial derivatives of the height map
+    float dU = kh * kn * (payload.texture->getColor(payload.tex_coords.x() + 1.0f / payload.texture->width, payload.tex_coords.y()).norm() - payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm());
+    float dV = kh * kn * (payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y() + 1.0f / payload.texture->height).norm() - payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm());
+    
+    //We calculate the new normal
+    Eigen::Vector3f ln = {-dU, -dV, 1};
+    normal = (TBN * ln).normalized();
 
     Eigen::Vector3f result_color = {0, 0, 0};
     result_color = normal;
