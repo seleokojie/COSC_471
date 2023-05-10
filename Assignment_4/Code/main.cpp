@@ -81,8 +81,7 @@ struct light{
 
 Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload){
     Eigen::Vector3f return_color = {0, 0, 0};
-    if (payload.texture)
-    {
+    if (payload.texture){
         // TODO: Get the texture value at the texture coordinates of the current fragment
 
     }
@@ -136,10 +135,22 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload){
     Eigen::Vector3f normal = payload.normal;
 
     Eigen::Vector3f result_color = {0, 0, 0};
+
+    //We calculate the color of the pixel using the Phong reflection model
     for (auto& light : lights){
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
-        // components are. Then, accumulate that result on the *result_color* object.
-        
+        // ambient
+        Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
+
+        // diffuse
+        Eigen::Vector3f light_dir = (light.position - point).normalized();
+        Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity) * std::max(0.0f, normal.dot(light_dir));
+
+        // specular
+        Eigen::Vector3f view_dir = (eye_pos - point).normalized();
+        Eigen::Vector3f half_dir = (light_dir + view_dir).normalized();
+        Eigen::Vector3f specular = ks.cwiseProduct(light.intensity) * std::pow(std::max(0.0f, normal.dot(half_dir)), p);
+
+        result_color += ambient + diffuse + specular;  
     }
 
     return result_color * 255.f;
