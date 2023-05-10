@@ -81,10 +81,9 @@ struct light{
 
 Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload){
     Eigen::Vector3f return_color = {0, 0, 0};
-    if (payload.texture){
+    if (payload.texture)
         return_color = payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y());
-
-    }
+    
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
 
@@ -108,9 +107,19 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload){
     Eigen::Vector3f result_color = {0, 0, 0};
 
     for (auto& light : lights){
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
-        // components are. Then, accumulate that result on the *result_color* object.
+        // ambient
+        Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
+        
+        // diffuse
+        Eigen::Vector3f light_dir = (light.position - point).normalized();
+        Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity) * std::max(0.0f, normal.dot(light_dir));
+        
+        // specular
+        Eigen::Vector3f view_dir = (eye_pos - point).normalized();
+        Eigen::Vector3f half_dir = (light_dir + view_dir).normalized();
+        Eigen::Vector3f specular = ks.cwiseProduct(light.intensity) * std::pow(std::max(0.0f, normal.dot(half_dir)), p);
 
+        result_color += ambient + diffuse + specular;
     }
 
     return result_color * 255.f;
@@ -136,21 +145,21 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload){
 
     Eigen::Vector3f result_color = {0, 0, 0};
 
-    //We calculate the color of the pixel using the Phong reflection model
+    // Phong shading
     for (auto& light : lights){
         // ambient
         Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
-
+        
         // diffuse
         Eigen::Vector3f light_dir = (light.position - point).normalized();
         Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity) * std::max(0.0f, normal.dot(light_dir));
-
+        
         // specular
         Eigen::Vector3f view_dir = (eye_pos - point).normalized();
         Eigen::Vector3f half_dir = (light_dir + view_dir).normalized();
         Eigen::Vector3f specular = ks.cwiseProduct(light.intensity) * std::pow(std::max(0.0f, normal.dot(half_dir)), p);
 
-        result_color += ambient + diffuse + specular;  
+        result_color += ambient + diffuse + specular;
     }
 
     return result_color * 255.f;
@@ -179,6 +188,8 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
 
     float kh = 0.2, kn = 0.1;
 
+    //Implement displacement mapping here
+
     //Generate the tangent space
     Eigen::Vector3f t = Eigen::Vector3f(normal.x() * normal.y() / std::sqrt(normal.x() * normal.x() + normal.z() * normal.z()), std::sqrt(normal.x() * normal.x() + normal.z() * normal.z()), normal.z() * normal.y() / std::sqrt(normal.x() * normal.x() + normal.z() * normal.z()));
     Eigen::Vector3f b = normal.cross(t);
@@ -190,32 +201,31 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     float dV = kh * kn * (payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y() + 1.0f / payload.texture->height).norm() - payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm());
     Eigen::Vector3f ln = {-dU, -dV, 1};
     
-    //Update the position and normal
-    point = point + kn * normal * payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm();
+    //Get the position after displacement mapping
+    point += kn * normal * payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y()).norm();
     normal = (TBN * ln).normalized();
-
 
     Eigen::Vector3f result_color = {0, 0, 0};
 
-    for (auto& light : lights){
-        // ambient
-        Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
+    //The next step in displacement mapping is to calculate the color as in phong shading
+    // Phong shading
+for (auto& light : lights){
+       // ambient
+       Eigen::Vector3f ambient = ka.cwiseProduct(amb_light_intensity);
 
-        // diffuse
-        Eigen::Vector3f light_dir = (light.position - point).normalized();
-        Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity) * std::max(0.0f, normal.dot(light_dir));
+       // diffuse
+       Eigen::Vector3f light_dir = (light.position - point).normalized();
+       Eigen::Vector3f diffuse = kd.cwiseProduct(light.intensity) * std::max(0.0f, normal.dot(light_dir));
 
-        // specular
-        Eigen::Vector3f view_dir = (eye_pos - point).normalized();
-        Eigen::Vector3f half_dir = (light_dir + view_dir).normalized();
-        Eigen::Vector3f specular = ks.cwiseProduct(light.intensity) * std::pow(std::max(0.0f, normal.dot(half_dir)), p);
+       // specular
+       Eigen::Vector3f view_dir = (eye_pos - point).normalized();
+       Eigen::Vector3f half_dir = (light_dir + view_dir).normalized();
+       Eigen::Vector3f specular = ks.cwiseProduct(light.intensity) * std::pow(std::max(0.0f, normal.dot(half_dir)), p);
 
-        result_color += ambient + diffuse + specular;
+       result_color += ambient + diffuse + specular;
     }
-
     return result_color * 255.f;
 }
-
 
 Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload){
     
@@ -312,7 +322,7 @@ int main(int argc, const char** argv){
             active_shader = bump_fragment_shader;
         }
         else if (argc == 3 && std::string(argv[2]) == "displacement"){
-            std::cout << "Rasterizing using the bump shader\n";
+            std::cout << "Rasterizing using the displacement shader\n";
             active_shader = displacement_fragment_shader;
         }
     }
@@ -359,13 +369,10 @@ int main(int argc, const char** argv){
         key = cv::waitKey(10);
 
         if (key == 'a' )
-        {
             angle -= 0.1;
-        }
+
         else if (key == 'd')
-        {
             angle += 0.1;
-        }
 
     }
     return 0;
