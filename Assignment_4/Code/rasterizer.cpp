@@ -8,24 +8,21 @@
 #include <math.h>
 
 
-rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
-{
+rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions){
     auto id = get_next_id();
     pos_buf.emplace(id, positions);
 
     return {id};
 }
 
-rst::ind_buf_id rst::rasterizer::load_indices(const std::vector<Eigen::Vector3i> &indices)
-{
+rst::ind_buf_id rst::rasterizer::load_indices(const std::vector<Eigen::Vector3i> &indices){
     auto id = get_next_id();
     ind_buf.emplace(id, indices);
 
     return {id};
 }
 
-rst::col_buf_id rst::rasterizer::load_colors(const std::vector<Eigen::Vector3f> &cols)
-{
+rst::col_buf_id rst::rasterizer::load_colors(const std::vector<Eigen::Vector3f> &cols){
     auto id = get_next_id();
     col_buf.emplace(id, cols);
 
